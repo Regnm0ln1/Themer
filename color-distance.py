@@ -1,7 +1,9 @@
 from PIL import Image
 import colorsys
+from math import floor
+from color_conversions import RgbToHsl, RgbToHex, HslToHex, HslToRgb, HueToRgb, RgbToLab
 
-IMAGE_PATH = "../test_image.jpg"
+IMAGE_PATH = "images/purple-pink-sunset.jpg"
 
 def get_pixels(image_path:str, to_hsl:bool) -> list:
     image = Image.open(image_path)
@@ -15,131 +17,122 @@ def get_pixels(image_path:str, to_hsl:bool) -> list:
     return image_pixels
 
 
-def RgbToHsl(pixel:tuple) -> tuple:
-    #stolen from https://stackoverflow.com/questions/2353211/hsl-to-rgb-color-conversion
-
-    r, g, b = pixel
-    r /= 255
-    g /= 255
-    b /= 255
-
-    vmax = max(r, g, b)
-    vmin = min(r, g, b)
-    h = (vmax + vmin) / 2
-    s = (vmax + vmin) / 2
-    l = (vmax + vmin) / 2
-
-    if (vmax == vmin):
-        return (0, 0, l)
-
-    d = vmax - vmin
-    s = d / (2 - vmax - vmin) if l > 0.5 else d / (vmax + vmin)
-    if vmax == r:
-        h = (g - b) / d + (6 if g < b else 0)
-    if vmax == g:
-        h = (b - r) / d + 2
-    if vmax == b:
-        h = (r - g) / d + 4
-
-    h /= 6
-    return (h, s, l)
-
-
-def rgb2lab ( inputColor ) :
-
-    num = 0
-    RGB = [0, 0, 0]
-
-    for value in inputColor :
-        value = float(value) / 255
-
-        if value > 0.04045 :
-            value = ( ( value + 0.055 ) / 1.055 ) ** 2.4
-        else :
-            value = value / 12.92
-
-        RGB[num] = value * 100
-        num = num + 1
-
-    XYZ = [0, 0, 0,]
-
-    X = RGB [0] * 0.4124 + RGB [1] * 0.3576 + RGB [2] * 0.1805
-    Y = RGB [0] * 0.2126 + RGB [1] * 0.7152 + RGB [2] * 0.0722
-    Z = RGB [0] * 0.0193 + RGB [1] * 0.1192 + RGB [2] * 0.9505
-    XYZ[ 0 ] = round( X, 4 )
-    XYZ[ 1 ] = round( Y, 4 )
-    XYZ[ 2 ] = round( Z, 4 )
-
-    XYZ[ 0 ] = float( XYZ[ 0 ] ) / 95.047         # ref_X =  95.047   Observer= 2°, Illuminant= D65
-    XYZ[ 1 ] = float( XYZ[ 1 ] ) / 100.0          # ref_Y = 100.000
-    XYZ[ 2 ] = float( XYZ[ 2 ] ) / 108.883        # ref_Z = 108.883
-
-    num = 0
-    for value in XYZ :
-
-        if value > 0.008856 :
-            value = value ** ( 0.3333333333333333 )
-        else :
-            value = ( 7.787 * value ) + ( 16 / 116 )
-
-        XYZ[num] = value
-        num = num + 1
-
-    Lab = [0, 0, 0]
-
-    L = ( 116 * XYZ[ 1 ] ) - 16
-    a = 500 * ( XYZ[ 0 ] - XYZ[ 1 ] )
-    b = 200 * ( XYZ[ 1 ] - XYZ[ 2 ] )
-
-    Lab [ 0 ] = round( L, 4 )
-    Lab [ 1 ] = round( a, 4 )
-    Lab [ 2 ] = round( b, 4 )
-
-    return Lab
-
 def HueExtremes(pixels):
     min_hue = min(pixel[0] for pixel in pixels)
     max_hue = max(pixel[0] for pixel in pixels)
     return min_hue, max_hue
 
-def GetMostFrequent(pixels):
-    #the amount of wanted colors not including dark and white
-    NUM_WANTED_COLORS = 16
-    RANGE_SIZE = 1/NUM_WANTED_COLORS
 
-    # White cutoff is -0.120x^(2.00) + 0.220x + 0.850 where x is lum and y is the WHITE_CUTOFF, based off of lum 0, 50 and 100
-    # Black cutoff is 0.0800x^(2.00) - 0.160x + 0.120 where x is lum andy is the WHITE_CUTOFF, based off of lum 0, 50 and 100
-    num_per_color = [0] * (NUM_WANTED_COLORS + 2)
+def GetMostFrequent(pixels, RANGE_VAL:int = 12):
+    #the amount of wanted colors not including dark and white
+
+    #specyfies how big a range is for a color so 36 would be 10 deg in the hue 1/36 in sat and 1/36 in lum
+    RANGE_SIZE = 1/RANGE_VAL
+
+    # list of [hue[sat[lum],[lum]], [sat[lum],[lum]]]
+    num_per_color = [[[[] for _ in range(RANGE_VAL)] for _ in range(RANGE_VAL)] for _ in range(RANGE_VAL)]
 
     num_pixels = 0
     num_allocated_pixels = 0
     for pixel in pixels:
-        white_cutoff = -0.120 * pixel[1]**2 + 0.220 * pixel[1] + 0.85
-        black_cutoff = 0.0800 * pixel[1]**2 - 0.160 * pixel[1] + 0.12
+        pixel_indexes = []
         num_pixels += 1
-        if pixel[2] >= white_cutoff:
-            num_per_color[-2] += 1
-        
-        elif pixel[2] <= black_cutoff:
-            num_per_color[-1] += 1
-    
+        for color_val in pixel:
+            pixel_indexes.append(floor(RANGE_VAL * color_val) if color_val != 1 else RANGE_VAL - 1)
+            
+        num_allocated_pixels+=1
+        # num_per_color[pixel_indexes[0]][pixel_indexes[1]][pixel_indexes[2]] += 1
+        num_per_color[pixel_indexes[0]][pixel_indexes[1]][pixel_indexes[2]].append(pixel)
+
+    return num_per_color, num_allocated_pixels
+
+
+
+def MeanOfGroup(color_group: list) -> dict:
+    colors = {}
+    for color in color_group:
+        if color not in colors.keys():
+            colors[color] = 1
         else:
-            for i in range(NUM_WANTED_COLORS):
-                if pixel[0] >= i * 1 / NUM_WANTED_COLORS and pixel[0] <= (i+1)* 1 / NUM_WANTED_COLORS:
-                    num_per_color[i] += 1
-                    num_allocated_pixels += 1
-                    continue
+            colors[color] += 1
 
-    return num_per_color
+    return dict(sorted(colors.items(), key=lambda item: item[1], reverse=True), length=len(color_group))
 
 
+def sort_colors(colors: list):
+    scored = {}
+    sorted_colors = {}
+    
+    for hue_group in colors:
+        for sat_group in hue_group:
+            for color_group in sat_group:
+                group_info = MeanOfGroup(color_group)
+                mean_color = next(iter(group_info.keys()))
+                if group_info["length"] != 0:
+                    sorted_colors[mean_color] = group_info[mean_color] + group_info["length"]*0.5
 
-def main():
+    sorted_colors = dict(sorted(sorted_colors.items(), key=lambda item: item[1], reverse=True))
+    return sorted_colors
+
+
+def choose_colors(color_dict:dict, dark_bgcolor: bool = True, dark_threshold:float = 0.25, lum_mult:float = 500, NUM_WANTED_COLORS:int = 18, reverse:bool = False):
+    chosen_colors = {}
+    if dark_bgcolor:
+        background_color = next(iter(color_dict.keys()))
+        while background_color[2] > dark_threshold:
+            background_color = next(iter(color_dict.keys()))
+
+        color_dict.pop(background_color)
+        chosen_colors["background"] = background_color
+        NUM_WANTED_COLORS - 1
+
+
+    for color in color_dict.keys():
+        color_dict[color] += score_color(color_dict, color, lum_mult)
+
+    color_dict = dict(sorted(color_dict.items(), key=lambda item: item[1], reverse=True))
+ 
+    if reverse == False:
+        start = 0
+        flip = 1
+    else:
+        start = 17
+        flip = -1
+    for color_num in range(NUM_WANTED_COLORS):
+
+        color = next(iter(color_dict.keys()))
+        if start + color_num*flip != 0:
+            chosen_colors[f"color{start+color_num*flip}"] = color
+            color_dict.pop(color)
+        else:
+            chosen_colors["foreground"] = color
+            color_dict.pop(color)
+
+
+
+    return chosen_colors
+
+
+def score_color(color_dict:dict, color: tuple, lum_mult:float):
+    points_to_add = color[2] * lum_mult
+    return points_to_add
+
+def main() -> None:
+    config_text = ""
     pixels = get_pixels(IMAGE_PATH, True)
+    most_common_main_colors, num_allocated = GetMostFrequent(pixels)
+    sorted_colors = sort_colors(most_common_main_colors)
+    i = 1
 
-    most_common_main_colors = GetMostFrequent(pixels)
+    chosen_colors = choose_colors(sorted_colors, lum_mult=5000, reverse=True, dark_threshold=0.3)
+    for color_type, color in chosen_colors.items():
+        final_color = HslToHex(color)
+        config_text += f"{color_type} {final_color} \n"
+    config_text += f"background_opacity {0.8}"
+    print(config_text)
 
-    print(most_common_main_colors)
+    
+
 
 
 if __name__ == "__main__":
