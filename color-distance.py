@@ -75,7 +75,7 @@ def sort_colors(colors: list):
     return sorted_colors
 
 
-def choose_colors(color_dict:dict, dark_bgcolor: bool = True, dark_threshold:float = 0.25, lum_mult:float = 500, NUM_WANTED_COLORS:int = 18, reverse:bool = False):
+def choose_colors(color_dict:dict, dark_bgcolor: bool = True, dark_threshold:float = 0.25, min_lum:float = 0.45, lum_mult:float = 500, NUM_WANTED_COLORS:int = 18, reverse:bool = False):
     chosen_colors = {}
     if dark_bgcolor:
         background_color = next(iter(color_dict.keys()))
@@ -87,8 +87,14 @@ def choose_colors(color_dict:dict, dark_bgcolor: bool = True, dark_threshold:flo
         NUM_WANTED_COLORS - 1
 
 
-    for color in color_dict.keys():
+
+
+    for color in list(color_dict.keys()):
         color_dict[color] += score_color(color_dict, color, lum_mult)
+        if color[2] < min_lum:
+            color_dict.pop(color)
+
+    chosen_colors["foreground"] = next(iter(color_dict.keys()))
 
     color_dict = dict(sorted(color_dict.items(), key=lambda item: item[1], reverse=True))
  
@@ -96,17 +102,15 @@ def choose_colors(color_dict:dict, dark_bgcolor: bool = True, dark_threshold:flo
         start = 0
         flip = 1
     else:
-        start = 17
+        start = 15
         flip = -1
-    for color_num in range(NUM_WANTED_COLORS):
+    for color_num in range(NUM_WANTED_COLORS-2):
 
         color = next(iter(color_dict.keys()))
-        if start + color_num*flip != 0:
-            chosen_colors[f"color{start+color_num*flip}"] = color
-            color_dict.pop(color)
-        else:
-            chosen_colors["foreground"] = color
-            color_dict.pop(color)
+
+        chosen_colors[f"color{start+color_num*flip}"] = color
+        color_dict.pop(color)
+
 
 
 
@@ -124,7 +128,7 @@ def main() -> None:
     sorted_colors = sort_colors(most_common_main_colors)
     i = 1
 
-    chosen_colors = choose_colors(sorted_colors, lum_mult=5000, reverse=True, dark_threshold=0.3)
+    chosen_colors = choose_colors(sorted_colors, lum_mult=50, reverse=False, dark_threshold=0.3)
     for color_type, color in chosen_colors.items():
         final_color = HslToHex(color)
         config_text += f"{color_type} {final_color} \n"
