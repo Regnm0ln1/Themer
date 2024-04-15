@@ -94,7 +94,7 @@ def HslToHex(color:tuple):
 def RgbToLab (inputColor:tuple) -> list:
     """
     stolen form https://stackoverflow.com/questions/13405956/convert-an-image-rgb-lab-with-python
-    takes an color in the RGB color space. InputColor should be a tuple.
+    takes an color in the RGB color space. InputColor should be a tuple. (0-255, 0-255, 0-255)
     Reurns a List in the LAB color space. The LAB conversion uses D65 as an illuminant (something I dont really understand)
     """
     num = 0
@@ -146,3 +146,55 @@ def RgbToLab (inputColor:tuple) -> list:
     Lab [ 2 ] = round( b, 4 )
 
     return Lab
+
+def XyzToLab(xyz):
+    # XYZ to Lab conversion
+    X, Y, Z = xyz
+    var_X = X / 95.047
+    var_Y = Y / 100.000
+    var_Z = Z / 108.883
+
+    if var_X > 0.008856:
+        var_X = var_X ** (1 / 3)
+    else:
+        var_X = 7.787 * var_X + 16 / 116
+    if var_Y > 0.008856:
+        var_Y = var_Y ** (1 / 3)
+    else:
+        var_Y = 7.787 * var_Y + 16 / 116
+    if var_Z > 0.008856:
+        var_Z = var_Z ** (1 / 3)
+    else:
+        var_Z = 7.787 * var_Z + 16 / 116
+
+    L = 116 * var_Y - 16
+    a = 500 * (var_X - var_Y)
+    b = 200 * (var_Y - var_Z)
+
+    return L, a, b
+
+def LabToXyz(lab):
+    # Lab to XYZ conversion
+    L, a, b = lab
+    var_Y = (L + 16.0) / 116.0
+    var_X = a / 500.0 + var_Y
+    var_Z = var_Y - b / 200.0
+
+    if var_Y ** 3 > 0.008856:
+        var_Y = var_Y ** 3
+    else:
+        var_Y = (var_Y - 16.0 / 116.0) / 7.787
+    if var_X ** 3 > 0.008856:
+        var_X = var_X ** 3
+    else:
+        var_X = (var_X - 16.0 / 116.0) / 7.787
+    if var_Z ** 3 > 0.008856:
+        var_Z = var_Z ** 3
+    else:
+        var_Z = (var_Z - 16.0 / 116.0) / 7.787
+
+    X = var_X * 95.047
+    Y = var_Y * 100.000
+    Z = var_Z * 108.883
+
+    return X, Y, Z
