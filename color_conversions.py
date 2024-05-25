@@ -74,12 +74,14 @@ def HueToRgb(p, q, t):
     return p
 
 
-def RgbToHex(r, g, b):
+def RgbToHex(color):
     """
     Convert RGB color space to hexadecimal color code.
     All values assumed to be in the range [0, 1].
     """
-    return "#{:02X}{:02X}{:02X}".format(int(r * 255), int(g * 255), int(b * 255))
+    r, g, b = color
+
+    return "#{:02X}{:02X}{:02X}".format(int(r), int(g), int(b))
 
 def HslToHex(color:tuple):
     """
