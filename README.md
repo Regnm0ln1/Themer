@@ -4,6 +4,7 @@ A program for automatically generating color-themes using an image as a referenc
 ## Install
 Clone the repo, change the IMAGE_PATH in the color_distance.py file to your desired image, then run 
 > python color_distance.py
+
 in the terminal when in the cloned directory.
 Put the output in you kitty.conf file (if it's for kitty ofcourse)
 
