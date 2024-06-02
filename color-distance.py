@@ -2,6 +2,7 @@ from PIL import Image
 import colorsys
 from math import floor, atan2, pi, cos, sin, exp, sqrt
 from color_conversions import RgbToHsl, RgbToHex, HslToHex, HslToRgb, HueToRgb, RgbToLab, XyzToLab, LabToXyz
+import sys
 
 
 
@@ -12,7 +13,7 @@ def delta_e_cie2000(rgb1:tuple, rgb2:tuple) -> float:
     returns a float, the difference
     """
 
-    #Taken from Chat GPT
+    # Taken from Chat GPT
     lab1 = RgbToLab(rgb1)
     lab2 = RgbToLab(rgb2)
 
@@ -87,10 +88,8 @@ def score_colors(colors:dict):
     for color in colors.keys():
         h, s, l = RgbToHsl(color)
         l_score = 1 - l
-        # colors[color] = colors[color] + (s * l_score)*100000
+        # Colors[color] = colors[color] + (s * l_score)*100000
         colors[color] *= (s * l_score)**2
-
-    
 
 
 def choose_colors(background_color:tuple, colors:dict, min_color_dist: int) -> list:
@@ -98,6 +97,7 @@ def choose_colors(background_color:tuple, colors:dict, min_color_dist: int) -> l
     This function chooses colors by looping over a dict of colors and comparing their distance to the background color through the delta_e_cie2000 function, it returns a list of the choosen colors
     It takes in a background_color (tuple) to compare other colors to, a colors (dict) to choose colors from, it should be sorted according to prioritized colors, it also takes in a min_color_dist (int) which is the minimum distance to background_color that is accepted
     """
+
     chosen_colors = []
     for color in colors.keys():
         if delta_e_cie2000(background_color, color) > min_color_dist:
@@ -107,55 +107,61 @@ def choose_colors(background_color:tuple, colors:dict, min_color_dist: int) -> l
 
     return chosen_colors
 
-def round_color(color: tuple):
+
+def round_color(color: tuple, rounding: int = 32):
     """
     Rounds colors to (0-8, 0-8, 0-8) before scaling them up to (0-256, 0-256, 0-256)
     takes in a color (tuple) in rgb format
     """
 
-    r, g, b = color
-    r = r // 32 * 32
-    g = g // 32 * 32
-    b = b // 32 * 32
+    try:
+        r, g, b = color
+    except:
+        r, g, b, a = color
+
+    r = r // rounding * rounding
+    g = g // rounding * rounding
+    b = b // rounding * rounding
 
     
     return (r, g, b)
 
 
 def main() -> None:
-    #image to load
-    IMAGE_PATH = "images/outside.png"
+    # Image to load from first arg when running script
+    IMAGE_PATH = sys.argv[1]
 
-    #loads image
+    # Loads image
     image = Image.open(IMAGE_PATH)
     image_pixel_access = image.load()
 
-    #dict of colors with rgb value as key and number of pixels with that color as the value
+    # Dict of colors with rgb value as key and number of pixels with that color as the value
     colors = {}
 
-    #min distance between background color and other colors
+    # Min distance between background color and other colors
     min_color_dist = 35
 
     for x in range(image.width):
         for y in range(image.height):
-            # adds one to instances of color in colors dict or creates it if it doesnt exist 
+            # Adds one to instances of color in colors dict or creates it if it doesnt exist 
             try:
                 colors[round_color(image_pixel_access[x, y])] += 1
             except:
                 colors[round_color(image_pixel_access[x, y])] = 1
 
-    #sorts dict to choose the most occuring color as the background
+
+    # Sorts dict to choose the most occuring color as the background
     colors = dict(sorted(colors.items(), key=lambda item: item[1], reverse=True))
     background_color = next(iter(colors))
 
-    #assigns score to each color according to brightness and saturation before again sorting it
+    # Assigns score to each color according to brightness and saturation before again sorting it
     score_colors(colors)
     colors = dict(sorted(colors.items(), key=lambda item: item[1], reverse=True))
 
-    #chooses colors to be used in theme
+    # Chooses colors to be used in theme
     chosen_colors = choose_colors(background_color, colors, min_color_dist)
     
-    #Adds all the colors to a string for printing out or in the future putting in a file
+    # Adds all the colors to a string for printing out or in the future putting in a file
     config_text = ""
     config_text += f"background {RgbToHex(background_color)} \n"
     config_text += f"foreground {RgbToHex(chosen_colors[0])} \n"
@@ -166,10 +172,6 @@ def main() -> None:
 
 
     print(config_text)
-
-
-    
-
 
 
 if __name__ == "__main__":

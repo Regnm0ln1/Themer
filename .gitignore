@@ -152,6 +152,14 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# Files that i do not have the right to distribute
+images/
+
+# Files i dont want to include for other reasons
+test.*
+current-theme.conf
+
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
