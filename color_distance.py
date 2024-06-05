@@ -80,7 +80,7 @@ def delta_e_cie2000(rgb1:tuple, rgb2:tuple) -> float:
 
     return delta_E
 
-def score_colors(colors:dict):
+def score_colors(colors:dict, scoring_pow: float = 2):
     """
     Scores colors based on light value and saturation value, it aims to priortize colors that are more 'interesting' 
     It takes in a dictionary of colors, this dictionary is then mutated, nothing is returned
@@ -89,21 +89,41 @@ def score_colors(colors:dict):
         h, s, l = RgbToHsl(color)
         l_score = 1 - l
         # Colors[color] = colors[color] + (s * l_score)*100000
-        colors[color] *= (s * l_score)**2
+        colors[color] *= (s * l_score)**scoring_pow
 
 
-def choose_colors(background_color:tuple, colors:dict, min_color_dist: int) -> list:
+def choose_colors(chosen_colors:dict, colors:dict, min_dist_to_bg: int, min_dist_to_others:int, num_colors:int = 18) -> dict:
     """
     This function chooses colors by looping over a dict of colors and comparing their distance to the background color through the delta_e_cie2000 function, it returns a list of the choosen colors
-    It takes in a background_color (tuple) to compare other colors to, a colors (dict) to choose colors from, it should be sorted according to prioritized colors, it also takes in a min_color_dist (int) which is the minimum distance to background_color that is accepted
+    It takes in a background_color (tuple) to compare other colors to, a colors (dict) to choose colors from, it should be sorted according to prioritized colors, it also takes in a min_color_dist (int) which is the minimum distance to background_color that is accepted, takes in num_colors (int) which includes the background_color
     """
 
-    chosen_colors = []
+
+    colors_to_choose = num_colors
     for color in colors.keys():
-        if delta_e_cie2000(background_color, color) > min_color_dist:
-            chosen_colors.append(color)
-            if len(chosen_colors) == 17:
+        if delta_e_cie2000(chosen_colors["color_background"], color) > min_dist_to_bg:
+            for chosen_color in chosen_colors.values():
+                if chosen_color == None:
+                    chosen_colors[f"color_{18 - colors_to_choose}"] = color
+                    colors_to_choose -= 1
+                    # if len(chosen_colors.keys()) == num_colors:
+                    if colors_to_choose == 0:
+                        break
+                elif delta_e_cie2000(color, chosen_color) > min_dist_to_others:
+                    continue
+                
                 break
+
+
+            # chosen_colors[f"color_{18 - colors_to_choose}"] = color
+            # colors_to_choose -= 1
+            # # if len(chosen_colors.keys()) == num_colors:
+            # if colors_to_choose == 0:
+            #     break
+
+    # print(chosen_colors)
+    for color_key in chosen_colors.keys():
+        chosen_colors[color_key] = RgbToHex(chosen_colors[color_key])
 
     return chosen_colors
 
@@ -125,54 +145,3 @@ def round_color(color: tuple, rounding: int = 32):
 
     
     return (r, g, b)
-
-
-def main() -> None:
-    # Image to load from first arg when running script
-    IMAGE_PATH = sys.argv[1]
-
-    # Loads image
-    image = Image.open(IMAGE_PATH)
-    image_pixel_access = image.load()
-
-    # Dict of colors with rgb value as key and number of pixels with that color as the value
-    colors = {}
-
-    # Min distance between background color and other colors
-    min_color_dist = 35
-
-    for x in range(image.width):
-        for y in range(image.height):
-            # Adds one to instances of color in colors dict or creates it if it doesnt exist 
-            try:
-                colors[round_color(image_pixel_access[x, y])] += 1
-            except:
-                colors[round_color(image_pixel_access[x, y])] = 1
-
-
-    # Sorts dict to choose the most occuring color as the background
-    colors = dict(sorted(colors.items(), key=lambda item: item[1], reverse=True))
-    background_color = next(iter(colors))
-
-    # Assigns score to each color according to brightness and saturation before again sorting it
-    score_colors(colors)
-    colors = dict(sorted(colors.items(), key=lambda item: item[1], reverse=True))
-
-    # Chooses colors to be used in theme
-    chosen_colors = choose_colors(background_color, colors, min_color_dist)
-    
-    # Adds all the colors to a string for printing out or in the future putting in a file
-    config_text = ""
-    config_text += f"background {RgbToHex(background_color)} \n"
-    config_text += f"foreground {RgbToHex(chosen_colors[0])} \n"
-    for ind, color in enumerate(chosen_colors[1:]):
-        config_text += f"color{ind} {RgbToHex(color)} \n"
-
-    config_text += "background_opacity 0.8"
-
-
-    print(config_text)
-
-
-if __name__ == "__main__":
-    main()
