@@ -4,6 +4,7 @@ config = {
 
     # How much colors should be rounded, standard is 32, since i felt like it
     "color_rounding": 32,
+
     # Can be "auto", hoping to add "light" and "dark" in future
     "mode": "auto",
 
@@ -13,7 +14,7 @@ config = {
     # Same as to_bg but for other colors
     "min_dist_to_other": 0,
 
-    # The power that is used in scoring function, higher scoring_pow means the function will prioritize more "vibrant" more when choosing colors
+    # The power that is used in scoring function, higher scoring_pow means the function will prioritize more "vibrant", i.e those that have higher saturation and a brightness closer to 50%, more when choosing colors
     "scoring_pow": 2,
 
     # How big the increases should be on the x-axis when reading the pixels with PILLOW, helps shorted time but will give worse results the bigger it is

@@ -106,20 +106,14 @@ def choose_colors(chosen_colors:dict, colors:dict, min_dist_to_bg: int, min_dist
                 if chosen_color == None:
                     chosen_colors[f"color_{18 - colors_to_choose}"] = color
                     colors_to_choose -= 1
-                    # if len(chosen_colors.keys()) == num_colors:
+
                     if colors_to_choose == 0:
                         break
+                    
                 elif delta_e_cie2000(color, chosen_color) > min_dist_to_others:
                     continue
                 
                 break
-
-
-            # chosen_colors[f"color_{18 - colors_to_choose}"] = color
-            # colors_to_choose -= 1
-            # # if len(chosen_colors.keys()) == num_colors:
-            # if colors_to_choose == 0:
-            #     break
 
     # print(chosen_colors)
     for color_key in chosen_colors.keys():
