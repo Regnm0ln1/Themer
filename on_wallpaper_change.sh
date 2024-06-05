@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python [path to main.py] $1
+python ~/Documents/projects/Themer/main.py $1
 
 # Get the process IDs of all running Kitty instances
 kitty_pids=$(pgrep -x kitty)

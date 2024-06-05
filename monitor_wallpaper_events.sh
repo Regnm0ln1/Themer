@@ -15,7 +15,7 @@ while true; do
     if [ "$current_wallpaper" != "$new_wallpaper" ]; then
         current_wallpaper=$new_wallpaper
         echo "wallpaper chagned"
-        ./on-wallpaper-change.sh $new_wallpaper
+        ./on_wallpaper_change.sh $new_wallpaper
     fi
     sleep 1
 done
