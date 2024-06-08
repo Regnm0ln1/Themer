@@ -1,4 +1,4 @@
-#!/bin/bash
+# !/bin/bash
 
 # Function to get the current wallpaper
 get_current_wallpaper() {
@@ -15,7 +15,7 @@ while true; do
     if [ "$current_wallpaper" != "$new_wallpaper" ]; then
         current_wallpaper=$new_wallpaper
         echo "wallpaper chagned"
-        ./on_wallpaper_change.sh $new_wallpaper
+        ~/Documents/projects/Themer/on_wallpaper_change.sh $new_wallpaper
     fi
     sleep 1
 done

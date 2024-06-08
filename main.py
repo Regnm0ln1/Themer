@@ -3,7 +3,7 @@ from sys import argv
 from os.path import expanduser
 from collections import defaultdict
 from color_distance import round_color, score_colors, choose_colors
-from color_conversions import RgbToHex
+from color_conversions import RgbToHex, RgbToHsl
 from themer_conf import config
 
 def main() -> None:
@@ -15,6 +15,8 @@ def main() -> None:
     num_colors = config["num_colors"]
     color_rounding = config["color_rounding"]
     mode = config["mode"]
+    dark_bound = config["dark_bound"]
+    light_bound = config["light_bound"]
     min_dist_to_bg = config["min_dist_to_bg"]
     min_dist_to_other = config["min_dist_to_other"]
     scoring_pow = config["scoring_pow"]
@@ -29,7 +31,9 @@ def main() -> None:
 
     # Dict of colors with rgb value as key and number of pixels with that color as the value
     colors = {}
-    chosen_colors = {}
+    chosen_colors = {
+        "color_background": None
+    }
 
     for x in range(0, image.width, x_skip):
         for y in range(0, image.height, y_skip):
@@ -42,8 +46,23 @@ def main() -> None:
 
     # Sorts dict to choose the most occuring color as the background
     colors = dict(sorted(colors.items(), key=lambda item: item[1], reverse=True))
+    for color in colors.keys():
+        hue, saturation, lightness = RgbToHsl(color)
+        match mode:
+            case "auto":
+                chosen_colors["color_background"] = color
+                break
+            case "dark":
+                if lightness < dark_bound:
+                    chosen_colors["color_background"] = color
+                    break
+            case "light":
+                if lightness > light_bound:
+                    chosen_colors["color_background"] = color
+                    break
 
-    chosen_colors["color_background"] = next(iter(colors))
+    if chosen_colors["color_background"] == None:
+        chosen_colors["color_background"] = next(iter(colors))
 
 
     for color_to_choose in range(num_colors - 1):
