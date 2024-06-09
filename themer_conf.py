@@ -1,10 +1,9 @@
 config = {
-    # The number of colors including background, foreground and color0-15
+    # The number of colors including background (color_background), foreground (color_0) and color_{1 - (num_colors-2)}
     "num_colors": 18,
 
     # How much colors should be rounded, standard is 32, since i felt like it
     "color_rounding": 32,
-
 
     # Can be "auto", "dark" or "light"
     # Will determine if "color_background" will be dark, light or whatever appears the most in the image
@@ -22,6 +21,18 @@ config = {
     # So if it is 0.7 all colors with lightness values above or at 0.7 are light
     "light_bound": 0.7,
 
+    # How the colors will be organised. Options are None, "pairs" and "pairs_reversed"
+    # None doesnt do any kind of organisation
+    # "Pairs" will in the case of 18 colors (background, foreground and color{1 - 16}) have a background a color_0 as forground and 16 colors split into pairs, for example 1 and 9, The two colors will be the same except that 1 will be darker
+    # "Pairs-reversed" will be the same as "Pairs" but 1 would in the case mentioned before be the lighter color
+    # Note that the colors generated when using one of the pair ooption are not compared to the background and may therefore be more difficult to diffirentiate. Because of that my recommendation is to not raise the "organisation_offset" to much
+    "organisation": "pairs",
+
+    # How much lighter the lighter color will be than the darker, based on the l in hsl (0 - 1), this option will only be used when organisation != None
+    "organisation_offset": 0.07,
+
+
+    ##### Currently unavailable
     # When there arent enough colors in the picture or they are too close, generate new colors
     # Options are Blend, Triad, Like and Monochromatic
     # Blend will blend the different colors that it found to varying amounts
@@ -30,7 +41,7 @@ config = {
     # Monochromatic will vary lightness and saturation of color_0 to create different colors
     "generation": None,
 
-    # How far the color_dist should be from background color, calculated with delta_e_cie2000 function
+    # How far the color_dist should be from background color, calculated with delta_e_cie2000 function in the color_distance.py file
     "min_dist_to_bg": 35,
 
     # Same as to_bg but for other colors
@@ -39,15 +50,15 @@ config = {
     # The power that is used in scoring function, higher scoring_pow means the function will prioritize more "vibrant", i.e those that have higher saturation and a brightness closer to 50%, more when choosing colors
     "scoring_pow": 2,
 
-    # How big the increases should be on the x-axis when reading the pixels with PILLOW, helps shorted time but will give worse results the bigger it is
+    # How big the increases should be on the x-axis when reading the pixels with PILLOW, helps shorted time but will give worse results the bigger it is. Must be int >= 1
     "x_skip": 1,
-    # Same but for y axis,
+    # Same but for y axis. Must be int >= 1
     "y_skip": 1,
 
     # A list of what main.py will output
     "outputs": [
         {
-            # Path to file to be outputed into
+            # Path to file to be outputed into, file will be overwritten
             "file_path": "~/.config/kitty/current-theme.conf",
 
             # What will be outputed into the file above, you can use "color_background" and color_{0-num_colors-2}

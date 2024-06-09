@@ -88,34 +88,65 @@ def score_colors(colors:dict, scoring_pow: float = 2):
     for color in colors.keys():
         h, s, l = RgbToHsl(color)
         l_score = 1 - l
-        # Colors[color] = colors[color] + (s * l_score)*100000
+        # Colors[color] = colors[color] + (s * l_score)*100000 # Maybe an option to be added later
         colors[color] *= (s * l_score)**scoring_pow
 
 
-def choose_colors(chosen_colors:dict, colors:dict, min_dist_to_bg: int, min_dist_to_others:int, num_colors:int = 18) -> dict:
+def choose_colors(chosen_colors:dict, colors:dict, min_dist_to_bg: int, min_dist_to_others:int, num_colors:int, organisation, organisation_offset:float) -> dict:
     """
-    This function chooses colors by looping over a dict of colors and comparing their distance to the background color through the delta_e_cie2000 function, it returns a list of the choosen colors
+    This function chooses colors by looping over a dict of colors and comparing their distance to the background color through the delta_e_cie2000 function, it returns a dict of the choosen colors
     It takes in a background_color (tuple) to compare other colors to, a colors (dict) to choose colors from, it should be sorted according to prioritized colors, it also takes in a min_color_dist (int) which is the minimum distance to background_color that is accepted, takes in num_colors (int) which includes the background_color
     """
 
-
     colors_to_choose = num_colors
+
     for color in colors.keys():
         if delta_e_cie2000(chosen_colors["color_background"], color) > min_dist_to_bg:
+            # Loop through all chosen_colors to see if color is far enough from them
             for chosen_color in chosen_colors.values():
-                if chosen_color == None:
-                    chosen_colors[f"color_{18 - colors_to_choose}"] = color
-                    colors_to_choose -= 1
+                # If chosen_color is a color and its chosen color is to close to color, break to get a new color 
+                if (chosen_color != None) and (delta_e_cie2000(color, chosen_color) < min_dist_to_others):
+                    break
 
-                    if colors_to_choose == 0:
-                        break
+            # Reaching here means that color has made it through all already chosen_colors and is therefore far enough from them
+            # If color_pairing is wanted and a foreground color has been chosen
+            if (organisation != None) and (chosen_colors["color_0"] != None):
+                hue, saturation, lightness = RgbToHsl(color)
+                # Make a new darker color if color is brighter than or equal to 0.5, can be between 0 and 1
+                if lightness >= 0.5: 
+                    color_light_to_add = color
+                    color_dark_to_add = HslToRgb((hue, saturation, lightness - organisation_offset)) 
+                # Make a new lighter color if color is darker than 0.5
+                else: 
+                    color_light_to_add = HslToRgb((hue, saturation, lightness + organisation_offset))
+                    color_dark_to_add = color
                     
-                elif delta_e_cie2000(color, chosen_color) > min_dist_to_others:
-                    continue
-                
-                break
+                # Depening on if lighter or darker colors should be the first in the pairs
+                match organisation:
+                    # Darker first
+                    case "pairs":
+                        chosen_colors[f"color_{num_colors - colors_to_choose}"] = color_dark_to_add
+                        chosen_colors[f"color_{num_colors - colors_to_choose + 8}"] = color_light_to_add
 
-    # print(chosen_colors)
+                    # Lighter first
+                    case "pairs_reversed":
+                        chosen_colors[f"color_{num_colors - colors_to_choose}"] = color_light_to_add
+                        chosen_colors[f"color_{num_colors - colors_to_choose + 8}"] = color_dark_to_add
+
+                # Some of the ugliest shit ive ever written
+                # Were only removing 1 to not mess up the numbering in the chosen_colors dict, and then making sure we aren't below half of num_colors (total colors to choose), this is because we actually choosing color pairs
+                colors_to_choose -= 1
+                if colors_to_choose <= num_colors / 2:
+                    break
+
+            # First choose a foreground color or if colors shouldn't be organised
+            else:
+                chosen_colors[f"color_{num_colors - colors_to_choose}"] = color
+                colors_to_choose -= 1
+                if colors_to_choose == 0:
+                    break
+            
+    # Make all chosen colors HEX
     for color_key in chosen_colors.keys():
         chosen_colors[color_key] = RgbToHex(chosen_colors[color_key])
 

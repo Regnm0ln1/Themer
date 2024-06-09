@@ -17,6 +17,8 @@ def main() -> None:
     mode = config["mode"]
     dark_bound = config["dark_bound"]
     light_bound = config["light_bound"]
+    organisation = config["organisation"]
+    organisation_offset = config["organisation_offset"]
     min_dist_to_bg = config["min_dist_to_bg"]
     min_dist_to_other = config["min_dist_to_other"]
     scoring_pow = config["scoring_pow"]
@@ -44,27 +46,34 @@ def main() -> None:
                 colors[round_color(image_pixel_access[x, y], color_rounding)] = 1
 
 
-    # Sorts dict to choose the most occuring color as the background
+    # Sorts dict from most common to least common
     colors = dict(sorted(colors.items(), key=lambda item: item[1], reverse=True))
     for color in colors.keys():
         hue, saturation, lightness = RgbToHsl(color)
         match mode:
+
+            # Choose the most occuring color as background color
             case "auto":
                 chosen_colors["color_background"] = color
                 break
+
+            # Choose the most occuring "dark" color, as defined by "dark_bound"
             case "dark":
                 if lightness < dark_bound:
                     chosen_colors["color_background"] = color
                     break
+
+            # Choose the most occuring "light" color, as defined by "light_bound"
             case "light":
                 if lightness > light_bound:
                     chosen_colors["color_background"] = color
                     break
 
+    # If no color was found to be dark or light enough force the most occuring color
     if chosen_colors["color_background"] == None:
         chosen_colors["color_background"] = next(iter(colors))
 
-
+    # Fill the chosen_colors dict with keys of color_{0 - (num_colors-1)} and value None
     for color_to_choose in range(num_colors - 1):
         chosen_colors[f"color_{color_to_choose}"] = None
 
@@ -73,7 +82,7 @@ def main() -> None:
     colors = dict(sorted(colors.items(), key=lambda item: item[1], reverse=True))
 
     # Chooses colors to be used in theme
-    chosen_colors = choose_colors(chosen_colors, colors, min_dist_to_bg, min_dist_to_other)
+    chosen_colors = choose_colors(chosen_colors, colors, min_dist_to_bg, min_dist_to_other, num_colors, organisation, organisation_offset)
 
     for output in outputs:
         color_variables = defaultdict(str, chosen_colors)

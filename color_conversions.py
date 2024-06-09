@@ -55,7 +55,7 @@ def HslToRgb(color: tuple):
     r = HueToRgb(p, q, h + 1/3)
     g = HueToRgb(p, q, h)
     b = HueToRgb(p, q, h - 1/3)
-    return (r, g, b)
+    return (round(r*255), round(g*255), round(b*255))
 
 def HueToRgb(p, q, t):
     """
