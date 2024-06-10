@@ -34,12 +34,23 @@ config = {
 
     ##### Currently unavailable
     # When there arent enough colors in the picture or they are too close, generate new colors
-    # Options are Blend, Triad, Like and Monochromatic
+    # Options are "blend", "triad", "like" and "monochromatic"
     # Blend will blend the different colors that it found to varying amounts
     # Triad will take color_0 and rotate 60 deg in both hue directions. Based on those 3 points it will vary hue, saturation and lightness a little to generate enough colors
     # Like will use color_0 as base and select colors by rotating hue a couple of degress in both directions
     # Monochromatic will vary lightness and saturation of color_0 to create different colors
-    "generation": None,
+    "generation_options": [
+        # {
+        #     "name": "triad",
+        # },
+        {
+            "name": "like",
+            # How much to rotate in each direction per iteration of generation on hsl color wheel
+            "deg_incrementation": 10,
+            # The biggest amount of rotation allowed in either direction on hsl color wheel
+            "max_rotation": 150
+        }
+    ],
 
     # How far the color_dist should be from background color, calculated with delta_e_cie2000 function in the color_distance.py file
     "min_dist_to_bg": 35,

@@ -44,7 +44,7 @@ def HslToRgb(color: tuple):
     """
     h, s, l = color
     if s == 0:
-        return l, l, l
+        return (round(l*255), round(l*255), round(l*255))
     
     if l < 0.5:
         q = l * (1 + s)

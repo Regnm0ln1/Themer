@@ -22,6 +22,7 @@ def main() -> None:
     min_dist_to_bg = config["min_dist_to_bg"]
     min_dist_to_other = config["min_dist_to_other"]
     scoring_options = config["scoring_options"]
+    generation_options = config["generation_options"]
     outputs = config["outputs"]
     x_skip = config["x_skip"]
     y_skip = config["y_skip"]
@@ -82,7 +83,7 @@ def main() -> None:
     colors = dict(sorted(colors.items(), key=lambda item: item[1], reverse=True))
 
     # Chooses colors to be used in theme
-    chosen_colors = choose_colors(chosen_colors, colors, min_dist_to_bg, min_dist_to_other, num_colors, organisation, organisation_offset)
+    chosen_colors = choose_colors(chosen_colors, colors, min_dist_to_bg, min_dist_to_other, num_colors, organisation, organisation_offset, generation_options)
 
     for output in outputs:
         color_variables = defaultdict(str, chosen_colors)
