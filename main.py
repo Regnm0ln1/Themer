@@ -21,7 +21,7 @@ def main() -> None:
     organisation_offset = config["organisation_offset"]
     min_dist_to_bg = config["min_dist_to_bg"]
     min_dist_to_other = config["min_dist_to_other"]
-    scoring_pow = config["scoring_pow"]
+    scoring_options = config["scoring_options"]
     outputs = config["outputs"]
     x_skip = config["x_skip"]
     y_skip = config["y_skip"]
@@ -78,7 +78,7 @@ def main() -> None:
         chosen_colors[f"color_{color_to_choose}"] = None
 
     # Assigns score to each color according to brightness and saturation before again sorting it
-    score_colors(colors, scoring_pow)
+    score_colors(colors, scoring_options, chosen_colors["color_background"])
     colors = dict(sorted(colors.items(), key=lambda item: item[1], reverse=True))
 
     # Chooses colors to be used in theme

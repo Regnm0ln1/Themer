@@ -80,7 +80,13 @@ def delta_e_cie2000(rgb1:tuple, rgb2:tuple) -> float:
 
     return delta_E
 
-def score_colors(colors:dict, scoring_pow: float = 2):
+def invert_color(color:tuple) -> tuple:
+    h, s, l = color
+    if h > 0.5: h -= 0.5 
+    else: h += 0.5
+    return (h, s, 1 - l)
+
+def score_colors(colors:dict, scoring_options:dict, background_color):
     """
     Scores colors based on light value and saturation value, it aims to priortize colors that are more 'interesting' 
     It takes in a dictionary of colors, this dictionary is then mutated, nothing is returned
@@ -88,8 +94,34 @@ def score_colors(colors:dict, scoring_pow: float = 2):
     for color in colors.keys():
         h, s, l = RgbToHsl(color)
         l_score = 1 - l
-        # Colors[color] = colors[color] + (s * l_score)*100000 # Maybe an option to be added later
-        colors[color] *= (s * l_score)**scoring_pow
+
+        # If vibrancy scoring is active
+        if scoring_options["vibrancy"]["active"]:
+
+            # If exponential
+            if scoring_options["vibrancy"]["exponential"]: colors[color] *= (s * l_score) ** scoring_options["vibrancy"]["scoring_var"]
+
+            # If multiplicative
+            else: colors[color] *= (s*l_score) * scoring_options["vibrancy"]["scoring_var"]
+        
+        # If scoring by closeness to inverted bg is acitve
+        if scoring_options["inverted_bg"]["active"]:
+            # Convert background color to hsl
+            hsl_bg = RgbToHsl(background_color)
+            
+            # Invert background color
+            inverted_bg = HslToRgb(invert_color(hsl_bg))
+
+            dist_to_inv_bg = delta_e_cie2000(color, inverted_bg)
+
+            # Get multiplier by taking 1/min_limit if dist is too small, 1/dist or 1/max_limit if dist is to big
+            multiplier = 1/max(scoring_options["inverted_bg"]["min_limit"], min(dist_to_inv_bg, scoring_options["inverted_bg"]["max_limit"]))
+            
+            # If exponential
+            if scoring_options["inverted_bg"]["exponential"]: colors[color] *= multiplier ** scoring_options["inverted_bg"]["scoring_var"]
+
+            # If multiplicative
+            else: colors[color] *= multiplier * scoring_options["inverted_bg"]["scoring_var"]
 
 
 def choose_colors(chosen_colors:dict, colors:dict, min_dist_to_bg: int, min_dist_to_others:int, num_colors:int, organisation, organisation_offset:float) -> dict:

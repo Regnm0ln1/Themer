@@ -26,7 +26,7 @@ config = {
     # "Pairs" will in the case of 18 colors (background, foreground and color{1 - 16}) have a background a color_0 as forground and 16 colors split into pairs, for example 1 and 9, The two colors will be the same except that 1 will be darker
     # "Pairs-reversed" will be the same as "Pairs" but 1 would in the case mentioned before be the lighter color
     # Note that the colors generated when using one of the pair ooption are not compared to the background and may therefore be more difficult to diffirentiate. Because of that my recommendation is to not raise the "organisation_offset" to much
-    "organisation": "pairs",
+    "organisation": "pairs_reversed",
 
     # How much lighter the lighter color will be than the darker, based on the l in hsl (0 - 1), this option will only be used when organisation != None
     "organisation_offset": 0.07,
@@ -45,10 +45,33 @@ config = {
     "min_dist_to_bg": 35,
 
     # Same as to_bg but for other colors
-    "min_dist_to_other": 0,
+    "min_dist_to_other": 10,
 
-    # The power that is used in scoring function, higher scoring_pow means the function will prioritize more "vibrant", i.e those that have higher saturation and a brightness closer to 50%, more when choosing colors
-    "scoring_pow": 2,
+    # All the options that will be used to prioritize colors in the theme
+    "scoring_options":{
+        # Will increase the score based on how vibrant a color is i.e how saturated it is and how close to 0.5 in lightness it is.
+        "vibrancy": {
+            # If it should be used
+            "active": True,
+            # In what way it will be applied, True for scoring var being used as an exponent and False for scroing var being used as an factor
+            "exponential": True,
+            "scoring_var": 2
+
+        },
+        # Scored on how close it is to the inverted background color
+        "inverted_bg":{
+            "active": True,
+
+            # To get a multiplier to use the scroing_var on we take 1 over the dist to bg from color, but by using min and max builtins we limit what the multiplier can be
+            # min_limit is the smallest value that the dist to bg from color can be
+            "min_limit": 5,
+            # max_limit is the biggest value that the dist to bg from color can be
+            "max_limit": 10,
+
+            "exponential": True,
+            "scoring_var": 3
+        }
+    },
 
     # How big the increases should be on the x-axis when reading the pixels with PILLOW, helps shorted time but will give worse results the bigger it is. Must be int >= 1
     "x_skip": 1,
