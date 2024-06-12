@@ -6,6 +6,9 @@ python ~/Documents/projects/Themer/main.py $1
 kitty_pids=$(pgrep -x kitty)
 echo $kitty_pids
 
+codium_pids=$(pgrep -x codium)
+echo $codium_pids
+
 # Send SIGUSR1 to each Kitty process to reload the configuration
 for pid in $kitty_pids; do
 

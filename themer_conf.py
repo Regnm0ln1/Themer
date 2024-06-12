@@ -124,6 +124,76 @@ selection_foreground {color_background}
 selection_background {color_0}
 
 background_opacity 0.8"""
+        },
+        {
+            "file_path": "~/Documents/projects/bg_dynamo_codium/themes/bg-dynamo.json",
+            "config_text": """{{
+    "name": "Bg Dynamo",
+    "type": "dark",
+    "colors": {{
+      "editor.background": "{color_background}",
+      "editor.foreground": "{color_0}",
+      "editorCursor.foreground": "{color_1}",
+      "editor.lineHighlightBackground": "{color_background}",
+      "editorLineNumber.foreground": "{color_1}",
+      "editor.selectionBackground": "{color_2}",
+      "editor.selectionForeground": "{color_background}",
+      "editor.inactiveSelectionBackground": "{color_10}",
+      "window.activeBorder": "{color_7}",
+      "window.inactiveBorder": "{color_15}" ,
+      "terminal.background": "{color_background}",
+      "terminal.foreground": "{color_0}",
+      "statusBar.background": "{color_0}",
+      "statusBar.foreground": "{color_background}",
+      "sideBar.background": "{color_background}",
+      "sideBar.foreground": "{color_0}",
+
+      "tab.activeBackground": "{color_0}",
+      "tab.activeForeground": "{color_background}",
+      "tab.inactiveBackground": "{color_background}",
+      "tab.inactiveForeground": "{color_0}",
+      "titleBar.activeBackground": "{color_0}",
+      "titleBar.activeForeground": "{color_background}",
+      "titleBar.inactiveBackground": "{color_background}",
+      "titleBar.inactiveForeground": "{color_0}",
+      
+      "menu.foreground": "{color_0}",
+      "menu.background": "{color_background}",
+      "menubar.selectionForeground": "{color_background}",
+      "menubar.SelectionBackground": "{color_0}"
+
+
+    }},
+    "workbench.colorCustomizations": {{
+      "activityBar.background": "{color_background}",
+      "activityBar.foreground": "{color_0}"
+
+
+    }},
+    "tokenColors": [
+      {{
+        "scope": "comment",
+        "settings": {{
+          "foreground": "{color_15}",
+          "fontStyle": "italic"
+        }}
+      }},
+      {{
+        "scope": "string",
+        "settings": {{
+          "foreground": "{color_3}"
+        }}
+      }},
+      {{
+        "scope": "keyword",
+        "settings": {{
+          "foreground": "{color_2}"
+        }}
+      }}
+    ]
+  }}
+            
+            """
         }
     ]
 

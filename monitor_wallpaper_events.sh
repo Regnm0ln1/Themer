@@ -1,21 +1,26 @@
-# !/bin/bash
+#!/bin/bash
 
-# Function to get the current wallpaper
-get_current_wallpaper() {
-    xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitoreDP-1/workspace0/last-image
-}
+############ Chat GPT made this by the way ############
 
-# Initial wallpaper
-current_wallpaper=$(get_current_wallpaper)
-echo $current_wallpaper
+# Directory to monitor
+DIR=~/Pictures/wallpapers
 
-# Monitor for changes
+# Variable to store the last accessed file
+last_accessed=""
+
+# Infinite loop to keep the script running
 while true; do
-    new_wallpaper=$(get_current_wallpaper)
-    if [ "$current_wallpaper" != "$new_wallpaper" ]; then
-        current_wallpaper=$new_wallpaper
-        echo "wallpaper chagned"
-        ~/Documents/projects/Themer/on_wallpaper_change.sh $new_wallpaper
-    fi
-    sleep 1
+  # Monitor for access of all files and subdirectories in DIR
+  new_wallpaper=$(inotifywait -r -e access --format '%w%f' "$DIR" 2>/dev/null)
+  
+  # Get the file extension
+  extension="${new_wallpaper##*.}"
+
+  # Check if the accessed file is an image (by extension) and if it is different from the last accessed file
+  if [[ "$new_wallpaper" != "$last_accessed" && "$extension" =~ ^(jpg|jpeg|png|gif|bmp|tiff|webp)$ ]]; then
+    ~/Documents/projects/Themer/on_wallpaper_change.sh "$new_wallpaper"
+    last_accessed=$new_wallpaper
+  fi
+
+  sleep 0.5
 done
