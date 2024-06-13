@@ -33,7 +33,7 @@ config = {
 
 
     ##### Currently unavailable
-    # When there arent enough colors in the picture or they are too close, generate new colors
+    # When there arent enough colors in the picture or they are too close, generate new colors. Will loop through all the options in the list, the same option can be repeated with different settings
     # Options are "blend", "triad", "like" and "monochromatic"
     # Blend will blend the different colors that it found to varying amounts
     # Triad will take color_0 and rotate 60 deg in both hue directions. Based on those 3 points it will vary hue, saturation and lightness a little to generate enough colors
