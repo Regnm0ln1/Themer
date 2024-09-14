@@ -1,9 +1,13 @@
+"""
+File containing color_distance functions and different helperfunctions for scoring and moving colors between lists
+"""
+
 from PIL import Image
 import colorsys
-from math import floor, atan2, pi, cos, sin, exp, sqrt
+from math import floor, atan2, pi, cos, sin, exp, sqrt, pow
 from color_conversions import RgbToHsl, RgbToHex, HslToHex, HslToRgb, HueToRgb, RgbToLab, XyzToLab, LabToXyz
 import sys
-
+from themer_conf import config
 
 
 def delta_e_cie2000(rgb1:tuple, rgb2:tuple) -> float:
@@ -80,6 +84,71 @@ def delta_e_cie2000(rgb1:tuple, rgb2:tuple) -> float:
 
     return delta_E
 
+def constrast_calc(rgb1:tuple, rgb2:tuple) -> float:
+    """
+    Function to calculate contrast between two colors, inspired by this stackoverflow post: https://stackoverflow.com/questions/9733288/how-to-programmatically-calculate-the-contrast-ratio-between-two-colors
+    Takes to rgb values as params in the form of tuples (0 - 255)
+    returns float ratio 
+    """
+    lum1 = luminance_calc(rgb1)
+    lum2 = luminance_calc(rgb2)
+
+    brightest = max(lum1, lum2)
+    darkest = min(lum1, lum2)
+
+    return (brightest + 0.05) / (darkest + 0.05)
+
+    # To get luminance
+
+
+def luminance_calc(rgb:tuple) -> float:
+    """
+    Mainly written to be used in conjunction with contrast_calc, calcultaes luminosity of a color, based on this stackoverflow post: https://stackoverflow.com/questions/9733288/how-to-programmatically-calculate-the-contrast-ratio-between-two-colors
+    Takes an rgb color in the form of a tuple (0 - 255)
+    returns a float
+    """
+
+    RED = 0.2126
+    GREEN = 0.7152
+    BLUE = 0.0722
+
+    GAMMA = 2.4
+
+    r, g, b = rgb
+    r /= 255
+    g /= 255
+    b /= 255
+
+    r = r / 12.92 if r <= 0.03928 else pow((r + 0.055) / 1.055, GAMMA)
+    g = g / 12.92 if g <= 0.03928 else pow((g + 0.055) / 1.055, GAMMA)
+    b = b / 12.92 if b <= 0.03928 else pow((b + 0.055) / 1.055, GAMMA)
+
+    return r * RED + g * GREEN + b * BLUE
+
+if config["color_distance_function"] == "contrast":
+    color_distance = constrast_calc
+
+elif config["color_distance_function"] == "delta_e_cie2000":
+    color_distance = delta_e_cie2000
+
+def check_distances(possible_color, chosen_colors, min_dist_to_bg, min_dist_to_others):
+    too_close = True
+
+    if color_distance(chosen_colors["color_background"], possible_color) > min_dist_to_bg:
+        too_close = False
+
+        # Loop through all chosen_colors (except for background color) to see if color is far enough from them 
+        for chosen_color in list(chosen_colors.values())[1:]:
+
+            # If chosen_color is a color and its chosen color is to close to color, break to get a new color 
+            if (chosen_color != None) and (color_distance(possible_color, chosen_color) < min_dist_to_others):
+                too_close = True
+                break
+
+    # Reaching here means that color has made it through all already chosen_colors and is therefore far enough from them
+    # If color_pairing is wanted and a foreground color has been chosen
+    return not too_close
+
 def invert_color(color:tuple) -> tuple:
     """
     Inverts a color
@@ -117,7 +186,7 @@ def score_colors(colors:dict, scoring_options:dict, background_color):
             # Invert background color
             inverted_bg = HslToRgb(invert_color(hsl_bg))
 
-            dist_to_inv_bg = delta_e_cie2000(color, inverted_bg)
+            dist_to_inv_bg = color_distance(color, inverted_bg)
 
             # Get multiplier by taking 1/min_limit if dist is too small, 1/dist or 1/max_limit if dist is to big
             multiplier = 1/max(scoring_options["inverted_bg"]["min_limit"], min(dist_to_inv_bg, scoring_options["inverted_bg"]["max_limit"]))
@@ -158,7 +227,7 @@ def pairify_color(color:tuple, organisation_offset:int):
 
     return color_light_to_add, color_dark_to_add
 
-def apply_triads(colors:dict, chosen_colors:dict, organisation, organisation_offset:float, num_colors:int, color_pairs_chosen:int, colors_to_choose:int, num_color_pairs:int):
+def apply_triads(colors:dict, chosen_colors:dict, organisation, organisation_offset:float, num_colors:int, color_pairs_chosen:int, colors_to_choose:int, num_color_pairs:int, min_dist_to_bg:float, min_dist_to_others:float):
     """
     Adds the Triad colors to the chosen_colors dict, however many of them fit within the num_colors designated in themer_conf.py
     Takes in colors, chosen_colors, organisation, organisation_offset, num_colors, color_pairs_chosen, colors_to_chose, num_color_pairs
@@ -167,7 +236,7 @@ def apply_triads(colors:dict, chosen_colors:dict, organisation, organisation_off
 
     triad1, triad2 = triad_generation(colors, chosen_colors)
 
-    colors_to_choose, color_pairs_chosen = insert_colors(chosen_colors, triad1, triad2, organisation, organisation_offset, colors_to_choose, color_pairs_chosen, num_color_pairs) 
+    colors_to_choose, color_pairs_chosen = insert_colors(chosen_colors, triad1, triad2, organisation, organisation_offset, colors_to_choose, color_pairs_chosen, num_color_pairs, min_dist_to_bg, min_dist_to_others) 
 
     return colors_to_choose, color_pairs_chosen
 
@@ -183,7 +252,7 @@ def like_generation(chosen_colors:dict, deg_incrementation):
     like2 = HslToRgb((h_fg - deg_incrementation, s_fg, l_fg))
     return like1, like2
 
-def apply_likes(colors:dict, chosen_colors:dict, organisation, organisation_offset:float, num_colors:int, color_pairs_chosen:int, colors_to_choose:int, num_color_pairs:int, deg_incrementation:float, max_rotation:float):
+def apply_likes(colors:dict, chosen_colors:dict, organisation, organisation_offset:float, num_colors:int, color_pairs_chosen:int, colors_to_choose:int, num_color_pairs:int, deg_incrementation:float, max_rotation:float, min_dist_to_bg:float, min_dist_to_others:float):
     """
     Generates and applies like colors by rotating the hue more and more in different directions, until the max_rotation by degrees set using deg_incrementation
     Takes in colors, chosen_colors, organisation, organisation_offset, num_colors, colors_pairs_chosen, colors_to_choose, num_color_pairs, deg_incrementation and max_rotation
@@ -200,7 +269,7 @@ def apply_likes(colors:dict, chosen_colors:dict, organisation, organisation_offs
         like1, like2 = like_generation(chosen_colors, rotation/360)
 
         # insert colors
-        colors_to_choose, color_pairs_chosen = insert_colors(chosen_colors, like1, like2, organisation, organisation_offset, colors_to_choose, color_pairs_chosen, num_color_pairs)
+        colors_to_choose, color_pairs_chosen = insert_colors(chosen_colors, like1, like2, organisation, organisation_offset, colors_to_choose, color_pairs_chosen, num_color_pairs, min_dist_to_bg, min_dist_to_others)
         if None not in chosen_colors.values():
             return colors_to_choose, color_pairs_chosen
 
@@ -208,19 +277,22 @@ def apply_likes(colors:dict, chosen_colors:dict, organisation, organisation_offs
 
 
 
-def insert_colors(chosen_colors:dict, color1:tuple, color2:tuple, organisation, organisation_offset:float, colors_to_choose:int, color_pairs_chosen:int, num_color_pairs):
+def insert_colors(chosen_colors:dict, color1:tuple, color2:tuple, organisation, organisation_offset:float, colors_to_choose:int, color_pairs_chosen:int, num_color_pairs:int, min_dist_to_bg:float, min_dist_to_others:float):
     # Just add them if we dont care about organisation
     if organisation == None:
-        chosen_colors[f"color_{num_colors - 1 - colors_to_choose}"] = color1
-        chosen_colors[f"color_{num_colors - colors_to_choose}"] = color2
-        colors_to_choose -= 2
+        if check_distances(color1, chosen_colors, min_dist_to_bg, min_dist_to_others):
+            chosen_colors[f"color_{num_colors - 1 - colors_to_choose}"] = color1
+            colors_to_choose -= 1
+        if check_distances(color2, chosen_colors, min_dist_to_bg, min_dist_to_others):
+            chosen_colors[f"color_{num_colors - colors_to_choose}"] = color2
+            colors_to_choose -= 1
 
     else:
         match organisation:
             # Darker color first in pair
             case "pairs":
                 # If no foreground, use first color as forground
-                if chosen_colors["color_0"] == None:
+                if (chosen_colors["color_0"] == None): # and check_distances(color1, chosen_colors, min_dist_to_bg, min_dist_to_others):
                     chosen_colors["color_0"] = color1
 
                     # Make pair of second color color
@@ -232,10 +304,13 @@ def insert_colors(chosen_colors:dict, color1:tuple, color2:tuple, organisation, 
 
                     # Three colors have been chosen
                     colors_to_choose -= 3
+
                 else:
                     # Make pairs of both colors
                     color1_light, color1_dark = pairify_color(color1, organisation_offset) 
                     color2_light, color2_dark = pairify_color(color2, organisation_offset) 
+
+
 
                     # Insert first pair
                     chosen_colors[f"color_{color_pairs_chosen + 1}"] = color1_dark
@@ -274,8 +349,8 @@ def insert_colors(chosen_colors:dict, color1:tuple, color2:tuple, organisation, 
                     color2_light, color2_dark = pairify_color(color2, organisation_offset) 
 
                     # Insert first pair
-                    chosen_colors[f"color_{color_pairs_chosen + 1}"] = color1_dark
-                    chosen_colors[f"color_{color_pairs_chosen + 1 + num_color_pairs}"] = color1_light
+                    chosen_colors[f"color_{color_pairs_chosen + 1}"] = color1_light
+                    chosen_colors[f"color_{color_pairs_chosen + 1 + num_color_pairs}"] = color1_dark
                     color_pairs_chosen += 1
 
                     # Check if all colors are chosen, break in that case
@@ -284,8 +359,8 @@ def insert_colors(chosen_colors:dict, color1:tuple, color2:tuple, organisation, 
                         return colors_to_choose, color_pairs_chosen
 
                     # Insert second pair
-                    chosen_colors[f"color_{color_pairs_chosen + 1}"] = color2_dark
-                    chosen_colors[f"color_{color_pairs_chosen + 1 + num_color_pairs}"] = color2_light
+                    chosen_colors[f"color_{color_pairs_chosen + 1}"] = color2_light
+                    chosen_colors[f"color_{color_pairs_chosen + 1 + num_color_pairs}"] = color2_dark
                     color_pairs_chosen += 1
                     colors_to_choose -= 2
                     
@@ -303,23 +378,11 @@ def choose_colors(chosen_colors:dict, colors:dict, min_dist_to_bg: float, min_di
     num_color_pairs = (num_colors - 2)//2
     color_pairs_chosen = 0
     for color in colors.keys():
-        too_close = False
-        if delta_e_cie2000(chosen_colors["color_background"], color) > min_dist_to_bg:
-            # Loop through all chosen_colors to see if color is far enough from them
-            for chosen_color in chosen_colors.values():
-
-                # If chosen_color is a color and its chosen color is to close to color, break to get a new color 
-                if (chosen_color != None) and (delta_e_cie2000(color, chosen_color) < min_dist_to_others):
-                    too_close = True
-                    break
-
-            # Reaching here means that color has made it through all already chosen_colors and is therefore far enough from them
-            # If color_pairing is wanted and a foreground color has been chosen
-            if too_close:
-                continue
+        if check_distances(color, chosen_colors, min_dist_to_bg, min_dist_to_others):
 
             if (organisation != None) and (chosen_colors["color_0"] != None):
                 color_light_to_add, color_dark_to_add = pairify_color(color, organisation_offset)
+
                 
                 # Depening on if lighter or darker colors should be the first in the pairs
                 match organisation:
@@ -352,14 +415,11 @@ def choose_colors(chosen_colors:dict, colors:dict, min_dist_to_bg: float, min_di
         for generation_method in generation_options:
             match generation_method["name"]:
                 case "triad":
-                    colors_to_choose, color_pairs_chosen = apply_triads(colors, chosen_colors, organisation, organisation_offset, num_colors, color_pairs_chosen, colors_to_choose, num_color_pairs)
+                    colors_to_choose, color_pairs_chosen = apply_triads(colors, chosen_colors, organisation, organisation_offset, num_colors, color_pairs_chosen, colors_to_choose, num_color_pairs, min_dist_to_bg, min_dist_to_others)
 
                 case "like":
                     if None in chosen_colors.values():
-                        colors_to_choose, color_pairs_chosen = apply_likes(colors, chosen_colors, organisation, organisation_offset, num_colors, color_pairs_chosen, colors_to_choose, num_color_pairs, generation_method["deg_incrementation"], generation_method["max_rotation"])
-
-
-                
+                        colors_to_choose, color_pairs_chosen = apply_likes(colors, chosen_colors, organisation, organisation_offset, num_colors, color_pairs_chosen, colors_to_choose, num_color_pairs, generation_method["deg_incrementation"], generation_method["max_rotation"], min_dist_to_bg, min_dist_to_others)
             
     # Make all chosen colors HEX
     for color_key in chosen_colors.keys():
@@ -370,7 +430,7 @@ def choose_colors(chosen_colors:dict, colors:dict, min_dist_to_bg: float, min_di
 
 def round_color(color: tuple, rounding: int = 32):
     """
-    Rounds colors to (0-8, 0-8, 0-8) before scaling them up to (0-256, 0-256, 0-256)
+    Rounds colors to (0-256//color_rounding, 0-256//color_rounding, 0-256//color_rounding) before scaling them up to (0-256, 0-256, 0-256)
     takes in a color (tuple) in rgb format
     """
 
@@ -385,3 +445,4 @@ def round_color(color: tuple, rounding: int = 32):
 
     
     return (r, g, b)
+

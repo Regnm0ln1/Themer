@@ -1,9 +1,13 @@
 config = {
+
+    # What color distance function to use, options are "contrast", "delta_e_cie2000" (currently broken)
+    "color_distance_function": "contrast",
+
     # The number of colors including background (color_background), foreground (color_0) and color_{1 - (num_colors-2)}
     "num_colors": 18,
 
     # How much colors should be rounded, standard is 32, since i felt like it
-    "color_rounding": 32,
+    "color_rounding": 48,
 
     # Can be "auto", "dark" or "light"
     # Will determine if "color_background" will be dark, light or whatever appears the most in the image
@@ -42,21 +46,31 @@ config = {
     "generation_options": [
         # {
         #     "name": "triad",
+        #     # Wether the triad colors in this option need to follow min distance to bg, this doesnt really matter since for the moment it only uses 120 degs in both directions, hence they should never be close enough
+        #     "uses_bg_dist":True,
+        #     # Wether the triad colors in this option need to follow min distance to other colors
+        #     "uses_other_dist":True
         # },
         {
             "name": "like",
+            # Wether the like colors in this option need to follow min distance to bg
+            "uses_bg_dist": True,
+            # Wether the like colors in this option need to follow min distance to other colors
+            "uses_other_dist": True,
             # How much to rotate in each direction per iteration of generation on hsl color wheel
-            "deg_incrementation": 10,
+            "deg_incrementation": 20,
             # The biggest amount of rotation allowed in either direction on hsl color wheel
             "max_rotation": 150
         }
     ],
 
-    # How far the color_dist should be from background color, calculated with delta_e_cie2000 function in the color_distance.py file
-    "min_dist_to_bg": 35,
+    # How far the color_dist should be from background color, calculated with color_distance_function function in the color_distance.py file
+    #"min_dist_to_bg": 48, #Used with delta_e_cie2000 to moderate success
+    "min_dist_to_bg": 3.23, # Used with "contrast"
 
     # Same as to_bg but for other colors
-    "min_dist_to_other": 10,
+    #"min_dist_to_other": 6, #used with "delta_e_cie2000" to moderate success
+    "min_dist_to_other": 0.7, # Used with "contrast"
 
     # All the options that will be used to prioritize colors in the theme
     "scoring_options":{
@@ -66,12 +80,12 @@ config = {
             "active": True,
             # In what way it will be applied, True for scoring var being used as an exponent and False for scroing var being used as an factor
             "exponential": True,
-            "scoring_var": 2
+            "scoring_var": 2.5
 
         },
         # Scored on how close it is to the inverted background color
         "inverted_bg":{
-            "active": True,
+            "active": False,
 
             # To get a multiplier to use the scroing_var on we take 1 over the dist to bg from color, but by using min and max builtins we limit what the multiplier can be
             # min_limit is the smallest value that the dist to bg from color can be
@@ -79,15 +93,15 @@ config = {
             # max_limit is the biggest value that the dist to bg from color can be
             "max_limit": 10,
 
-            "exponential": True,
-            "scoring_var": 3
+            "exponential": False,
+            "scoring_var": 25
         }
     },
 
     # How big the increases should be on the x-axis when reading the pixels with PILLOW, helps shorted time but will give worse results the bigger it is. Must be int >= 1
-    "x_skip": 1,
+    "x_skip": 2,
     # Same but for y axis. Must be int >= 1
-    "y_skip": 1,
+    "y_skip": 2,
 
     # A list of what main.py will output
     "outputs": [
@@ -194,6 +208,26 @@ background_opacity 0.8"""
   }}
             
             """
+        },
+        {
+          "file_path": "~/.config/cava/config",
+          "config_text": """
+[color]
+
+# Gradient mode, only hex defined colors are supported,
+# background must also be defined in hex or remain commented out. 1 = on, 0 = off.
+# You can define as many as 8 different colors. They range from bottom to top of screen
+ gradient = 1
+ gradient_count = 8
+ gradient_color_1 = '{color_0}'
+ gradient_color_2 = '{color_1}'
+ gradient_color_3 = '{color_2}'
+ gradient_color_4 = '{color_3}'
+ gradient_color_5 = '{color_4}'
+ gradient_color_6 = '{color_5}'
+ gradient_color_7 = '{color_6}'
+ gradient_color_8 = '{color_7}'
+          """
         }
     ]
 

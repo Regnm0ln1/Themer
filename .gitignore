@@ -158,6 +158,7 @@ images/
 # Files i dont want to include for other reasons
 test.*
 current-theme.conf
+themer_conf.py
 
 
 # PyCharm

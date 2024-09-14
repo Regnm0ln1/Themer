@@ -149,6 +149,7 @@ def RgbToLab (inputColor:tuple) -> list:
 
     return Lab
 
+
 def XyzToLab(xyz):
     # XYZ to Lab conversion
     X, Y, Z = xyz

@@ -22,5 +22,5 @@ while true; do
     last_accessed=$new_wallpaper
   fi
 
-  sleep 0.5
+  # sleep 0.5
 done
